@@ -1,0 +1,1 @@
+"idEstabelecimentoBusca", "administradora", "servico", "forma", "produto", "razao_social", "nome_fantasia", "logradouro", "endereco", "numero", "complemento", "cep", "latitude", "longitude", "uf", "cidade", "bairro", "ddd", "telefone", "website", "email", "ramo", "cod_segmento_premium", "complemento_premium", "data_registro"

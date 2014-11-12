@@ -1,0 +1,11 @@
+{
+      "name"        : "sodexo-web-scrape",
+      "version"     : "0.0.1",
+      "description" : "Nodejs web crawler to get informations from http://www.sodexoclub.com.br",
+      "main"        : "crawler.js",
+      "author"      : "Paulo Luan",
+      "dependencies": {
+            "request": "latest",
+            "mongodb": "latest",
+      }
+}
