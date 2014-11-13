@@ -6,6 +6,7 @@
       "author"      : "Paulo Luan",
       "dependencies": {
             "request": "latest",
-            "mongodb": "latest"
+            "mongodb": "latest",
+            "mongo-cursor-processing": "latest"
       }
 }
