@@ -45,33 +45,46 @@ function makeRequest(url, params, callback)
 
 function getCities(uf)
 {
+	var savedUF = uf;
 	var citiesCallback = function(cities)
 	{
 		var parsedCities = JSON.parse(cities);
-		iterateCities(parsedCities, uf);
+
+		for (var i = 0; i < parsedCities.length; i++) {
+			parsedCities[i].uf = savedUF;
+		};
+
+		Mongo.save_city(parsedCities);
 	}
 
 	makeRequest(citiesUrl, "produto=CARTÃO REFEICAO|9&uf=" + uf, citiesCallback)
 }
 
-function iterateCities(cities, uf)
+function iterateCities(cities)
 {
 	for (var i = 0; i < cities.length; i++) {		
 		var city = cities[i].cidade;
+		var uf = cities[i].uf;
 		var baseParams = "produto=CARTÃO REFEICAO|9&uf=" + uf + "&cidade=" + city + "&bairro=";
-		getDataFromCity(baseParams, city);
+		getDataFromCity(baseParams, cities[i]);
 	};
 }
 
 var getDataFromCity = function(baseParams, city)
 {
-	var cityName = city;
+	var cityBackup = city;
 	
-	var saveResult = function(result, city) 
+	var saveResult = function(result) 
 	{
-		var parsedResult = JSON.parse(result);
-		Mongo.save_entity(parsedResult);
-		//saveResultJson(parsedResult, cityName + ".json");
+		try
+		{
+			var parsedResult = JSON.parse(result);
+			Mongo.save_entity(parsedResult);
+			Mongo.removeCity(cityBackup);
+			//saveResultJson(parsedResult, cityName + ".json");
+		} catch(ex) {
+			console.log("erro: ", ex);
+		}
 	};
 
 	makeRequest(detailsUrl, baseParams, saveResult);
@@ -84,22 +97,30 @@ function saveResultJson(json, fileName)
 	});
 }
 
-function getAll()
+function initialize_cities()
 {
 	for (var i = 0; i < estados.length; i++) {
 		getCities(estados[i])
 	};
 }
 
+function getAllEntities()
+{
+	var callback = function (cities) {
+		iterateCities(cities);
+	}
+
+	Mongo.get_all_cities(callback);
+}
 
 function initialize() 
 {
-      var callback = function () {
-      		//getCities("SP")
-      		getAll();
-      }
-
-      Mongo.initialize_db(callback)
+      //Mongo.initialize_db(initialize_cities); // first step: Load all cities to the database
+      //Mongo.initialize_db(getAllEntities); // second step: get all loaded cities of database, and iterate over all registers.
+      
+      //TODO: remove duplicated registers
+      // before to do that, you need to run: db.entities.ensureIndex( { "idEstabelecimentoBusca": 1 }, { unique: true , dropDups: true} )
+      Mongo.initialize_db(Mongo.exportToCSV); // step 3:  export the data :)
 }
 
 initialize();

@@ -14,13 +14,21 @@
 
 // db.entities.ensureIndex( { "idEstabelecimentoBusca": 1 }, { unique: true , dropDups: true} )
 
-// Retrieve
-var database;
+var mongoProcessing = require('mongo-cursor-processing')
+var fs = require('fs');
 
+var database;
+var databaseName = "sodexo";
+var collection_name = "entities";
+
+//--------------------------------------------
+//    Common functions
+//--------------------------------------------
 exports.initialize_db = function(callback) {
-      var MongoClient = require('mongodb').MongoClient;
-            
-      MongoClient.connect("mongodb://localhost:27017/sodexo", function (err, db) {
+      var MongoClient = require("mongodb").MongoClient;
+      var databaseFullName = "mongodb://localhost:27017/" + databaseName;      
+
+      MongoClient.connect(databaseFullName, function (err, db) {
             if (err) {
                   return console.dir(err);
             }
@@ -49,7 +57,129 @@ function save_to_db(json, collection_name) {
       }
 }
 
-exports.save_entity = function (entity) {
-      var collection_name = 'entities'
-      save_to_db(entity, collection_name);
+exports.delete_from_db = function (json, collection_name) {
+      var collection = database.collection(collection_name);
+
+      collection.remove(json, function (error, inserted) {
+            if (error) {
+                  console.log(error);
+            } else {
+                  console.log("removido: ", json);      
+            }
+      });
 }
+
+
+
+//--------------------------------------------
+//    Specific functions
+//--------------------------------------------
+exports.save_entity = function (entity) {
+      save_to_db(entity, "entities");
+}
+
+exports.save_city = function (city) {
+      save_to_db(city, "cities");
+}
+
+exports.removeCity = function (city) {
+      this.delete_from_db(city, "cities");
+}
+
+exports.get_all_cities = function(callback) {
+      var collection = database.collection('cities');
+
+      collection.find({}, function(err, result_cursor) {
+            result_cursor.toArray(function(cursor_err, all_cities) {            
+                  callback(all_cities);   
+            });
+      });
+}
+
+
+
+//============================================================
+//    CSV functions
+//============================================================
+exports.exportToCSV = function() {
+      var processItem = function(entity_doc, done){
+            var convertedCsv = convertToCSV([entity_doc]); 
+            appendTextToCsv(convertedCsv, entity_doc, done)
+      }
+
+      var entities_collection = database.collection('entities');
+
+      entities_collection.find({}, function(err, result_cursor) {
+            mongoProcessing(result_cursor, processItem, 1, function (err) {
+                  if (err) {
+                        console.error('on noes, an error', err)
+                        process.exit(1)
+                  }
+            })
+      });
+
+}
+
+function convertToCSV(objArray) {
+      var array = typeof objArray != 'object' ? JSON.parse(objArray) : objArray;
+      var str = '';
+
+      for (var i = 0; i < array.length; i++) {
+          var line = '';
+          str += '\r\n';
+
+          for (var index in array[i]) {
+              if (line != '') line += '|'
+
+              line += array[i][index];
+          }
+
+          str += line;
+      }
+
+      return str;
+}
+
+function appendTextToCsv(text, entity_doc, done) {
+      if(entity_doc.uf)
+      {
+            var csv_path = 'output/' + entity_doc.uf + '.txt';
+
+            fs.exists(csv_path, function (exists) {
+                  if(!exists) 
+                  {
+                        createColumnNames(csv_path, entity_doc, function(){
+                              appendText(csv_path, text, done)
+                        });
+                  } 
+                  else 
+                  {
+                        appendText(csv_path, text, done)
+                  }
+            });
+      } 
+      else 
+      {
+            done();
+      }
+}
+
+var appendText = function(csv_path, text, done)
+{
+      fs.appendFile(csv_path, text, function (err) {
+            if(err) {
+                  console.log(err)
+            }
+
+            console.log(csv_path)
+
+            done();
+      });            
+}
+
+function createColumnNames(csvPath, entity_doc, callback) {
+      var entity_keys = Object.keys(entity_doc)
+      var text = entity_keys
+      return appendText(csvPath, text, callback);
+}
+
