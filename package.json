@@ -6,6 +6,6 @@
       "author"      : "Paulo Luan",
       "dependencies": {
             "request": "latest",
-            "mongodb": "latest",
+            "mongodb": "latest"
       }
 }
