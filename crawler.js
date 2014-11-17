@@ -79,7 +79,18 @@ var getDataFromCity = function(baseParams, city)
 		try
 		{
 			var parsedResult = JSON.parse(result);
-			Mongo.save_entity(parsedResult);
+
+			if(parsedResult.length > 2000) // memory problem with large json's  
+			{
+				for (var i = 0; i < parsedResult.length; i++) 
+				{
+					Mongo.save_entity(parsedResult[i]);
+				};
+			} else 
+			{
+				Mongo.save_entity(parsedResult);
+			}
+
 			Mongo.removeCity(cityBackup);
 			//saveResultJson(parsedResult, cityName + ".json");
 		} catch(ex) {
@@ -115,12 +126,12 @@ function getAllEntities()
 
 function initialize() 
 {
-      //Mongo.initialize_db(initialize_cities); // first step: Load all cities to the database
-      //Mongo.initialize_db(getAllEntities); // second step: get all loaded cities of database, and iterate over all registers.
-      
-      //TODO: remove duplicated registers
-      // before to do that, you need to run: db.entities.ensureIndex( { "idEstabelecimentoBusca": 1 }, { unique: true , dropDups: true} )
-      Mongo.initialize_db(Mongo.exportToCSV); // step 3:  export the data :)
+	//Mongo.initialize_db(initialize_cities); // first step: Load all cities to the database
+	//Mongo.initialize_db(getAllEntities); // second step: get all loaded cities of database, and iterate over all registers.
+
+	//TODO: remove duplicated registers
+	// before to do that, you need to run: db.entities.ensureIndex( { "idEstabelecimentoBusca": 1 }, { unique: true , dropDups: true} )
+	//Mongo.initialize_db(Mongo.exportToCSV); // step 3:  export the data :)
 }
 
 initialize();
